@@ -22,7 +22,7 @@ import { SignIn } from '@clerk/clerk-react'
 const App = () => {
   const location = useLocation()
   const isAdminRoute = location.pathname.startsWith('/admin')
-  const { user } = useAppContext();
+  const { user, isAdmin } = useAppContext();
   return (
     <>
       <Toaster/>
@@ -34,7 +34,7 @@ const App = () => {
         <Route path='/movies/:id/:date' element={<SeatLayout/>} />
         <Route path='/my-bookings' element={<MyBookings/>} />
         <Route path='/favorite' element={<Favorite/>} />
-        <Route path='/admin/*' element={user? <Layout/> : (
+        <Route path='/admin/*' element={user && isAdmin ? <Layout/> : (
           <div className='min-h-screen flex justify-center items-center'>
             <SignIn fallbackRedirectUrl={'/admin'}/>
           </div>
