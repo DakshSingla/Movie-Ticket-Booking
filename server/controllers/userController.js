@@ -1,5 +1,6 @@
 import Booking from "../models/Booking.js";
 import Movie from "../models/Movie.js";
+import { clerkClient } from "@clerk/clerk-sdk-node";
 
 // API Controller Function to Get User Bookings
 export const getUserBookings = async (req, res) => {

@@ -1,5 +1,6 @@
+import { clerkClient } from "@clerk/clerk-sdk-node";
+
 export const protectAdmin = async (req, res, next) => {
-    const { clerkClient } = require("@clerk/clerk-sdk-node");
     try {
         const { userId } = req.auth();
         if (!userId) {
