@@ -1,57 +1,97 @@
-import React, { useEffect, useState } from 'react'
+import React, {useEffect, useState } from 'react'
 import Loading from '../../components/Loading'
 import { dummyShowsData } from '../../assets/assets';
 import Title from '../../components/admin/Title';
 import { CheckIcon, DeleteIcon, StarIcon } from 'lucide-react';  // <-- Added import
 import { kConverter } from '../../lib/kConverter';
+import { useAppContext } from '../../context/AppContext';
+import toast from 'react-hot-toast';
 
 const AddShows = () => {
-      const currency = import.meta.env.VITE_CURRENCY
+    const {axios, getToken, user, image_base_url} = useAppContext(); 
+    const currency = import.meta.env.VITE_CURRENCY
+    const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
+    const [selectedMovie, setSelectedMovie] = useState(null); 
+    const [dateTimeSelection, setDateTimeSelection] = useState({});
+    const [dateTimeInput, setDateTimeInput] = useState("");
+    const [showPrice, setShowPrice] = useState("");
+    const [addingShow, setAddingShow] = useState(false);
 
-      const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
-
-      const [selectedMovie, setSelectedMovie] = useState(null); 
-      
-      const [dateTimeSelection, setDateTimeSelection] = useState({});
-      
-      const [dateTimeInput, setDateTimeInput] = useState("");
-      
-      const [showPrice, setShowPrice] = useState("");
-
-      const fetchNowPlayingMovies = async () => {
-        setNowPlayingMovies(dummyShowsData)
-      };
-
-      const handleDateTimeAdd = () => {
-        if(!dateTimeInput) return;
-        const [date, time] = dateTimeInput.split("T");
-        if (!date || !time) return;
-        setDateTimeSelection((prev)=>{
-          const times = prev[date] || [];
-          if(!times.includes(time)){
-            return {...prev, [date]: [...times, time]};
+    const fetchNowPlayingMovies = async () => {
+      //setNowPlayingMovies(dummyShowsData) //to get the data from assets folder
+      try {
+        const {data} = await axios.get('/api/show/now-playing', {
+          headers: {Authorization: `Bearer ${await getToken()}`}})
+          if(data.success){
+            setNowPlayingMovies(data.movies);
           }
-          return prev;
-        });
-      };
+      } catch (error) {
+        console.log('Error while fetching movies :',error);
+      }
+    };
 
-      const handleRemoveTime = (date, time) => {
-        setDateTimeSelection((prev) => {
-          const filteredTimes = prev[date].filter((t) => t !== time);
-          if (filteredTimes.length === 0) {
-            const { [date]: _, ...rest } = prev;
-            return rest;
-          }
-          return {
-            ...prev,
-            [date]: filteredTimes,
-          };
-        });
-      };
+    const handleDateTimeAdd = () => {
+      if(!dateTimeInput) return;
+      const [date, time] = dateTimeInput.split("T");
+      if (!date || !time) return;
+      setDateTimeSelection((prev)=>{
+        const times = prev[date] || [];
+        if(!times.includes(time)){
+          return {...prev, [date]: [...times, time]};
+        }
+        return prev;
+      });
+    };
 
-      useEffect(()=>{
+    const handleRemoveTime = (date, time) => {
+      setDateTimeSelection((prev) => {
+        const filteredTimes = prev[date].filter((t) => t !== time);
+        if (filteredTimes.length === 0) {
+          const { [date]: _, ...rest } = prev;
+          return rest;
+        }
+        return {
+          ...prev,
+          [date]: filteredTimes,
+        };
+      });
+    };
+    const handleSubmit = async () => {
+      try {
+        setAddingShow(true)
+        if(!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice){
+          return toast('Missing required fields');
+        }
+        const showsInput = Object.entries(dateTimeSelection).map(([date, time]) => ({date, time}));
+        const payload = {
+          movieId: selectedMovie,
+          showsInput,
+          showPrice: Number(showPrice)
+        }
+  const {data} = await axios.post('/api/show/add', payload, {
+          headers: {Authorization: `Bearer ${await getToken()}`}
+        })
+        if(data.success){
+          toast.success(data.message);
+          setSelectedMovie(null);
+          setDateTimeSelection({});
+          setDateTimeInput("");
+          setShowPrice("");
+        }else{
+          toast.error(data.message);
+        }
+      } catch (error) {
+          console.error("Submission error:", error);
+          toast.error('An error occurred. Please try again.')
+      }
+      setAddingShow(false);
+    }
+
+    useEffect(()=>{
+      if(user){
         fetchNowPlayingMovies();
-      },[]);
+      }
+    },[user]);
 
   return nowPlayingMovies.length > 0 ? (
     <>
@@ -71,7 +111,7 @@ const AddShows = () => {
             >                         
               <div className='relative rounded-lg overflow-hidden'>
                 <img 
-                  src={movie.poster_path} 
+                  src={image_base_url+ movie.poster_path} 
                   alt={movie.title} 
                   className='w-full object-cover brightness-90'
                 />
@@ -152,7 +192,7 @@ const AddShows = () => {
       </div>
       )}
           {/* DATA UPLOADING BUTTON */}
-      <button className='bg-primary text-white px-8 py-2 mt-6 rounded hover:bg-primary/90 transition-all cursor-pointer'>
+      <button onClick={handleSubmit} disabled={addingShow} className='bg-primary text-white px-8 py-2 mt-6 rounded hover:bg-primary/90 transition-all cursor-pointer'>
           Add Shows
       </button>
     </>

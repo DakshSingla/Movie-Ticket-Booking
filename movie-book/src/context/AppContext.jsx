@@ -14,6 +14,7 @@ export const AppProvider = ({ children }) => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [shows, setShows] = useState([]);
     const [favouriteMovies, setFavouriteMovies] = useState([]);
+    const image_base_url = import.meta.env.VITE_TMDB_IMAGE_BASE_URL;
     const { user } = useUser();
     const { getToken } = useAuth();
     const location = useLocation();
@@ -49,7 +50,7 @@ export const AppProvider = ({ children }) => {
         }
     };
 
-    const fetchFavoriteMovies = async () => {
+    const fetchFavouriteMovies = async () => {
         try {
             const { data } = await axios.get('/api/user/favorites', {
                 headers: {
@@ -72,7 +73,7 @@ export const AppProvider = ({ children }) => {
     useEffect(() => {
         if (user) {
             fetchIsAdmin();
-            fetchFavoriteMovies();
+            fetchFavouriteMovies();
         }
     }, [user]);
 
@@ -84,8 +85,9 @@ export const AppProvider = ({ children }) => {
         navigate,
         isAdmin,
         shows,
-        favouriteMovies,
-        fetchFavoriteMovies,
+    favouriteMovies,
+    fetchFavouriteMovies,
+        image_base_url,
     };
 
     return (
